@@ -1,0 +1,89 @@
+<html>
+<head>
+	<title>Chatroom</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+	<script src="http://127.0.0.1:1337/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+		var username;
+		var temp_username = prompt("Your name: ", "your name here");
+		var socketio = io.connect("127.0.0.1:1337");
+		
+		// login
+		socketio.emit("log_in", { username: temp_username });
+		socketio.on("return_username", function(data) {
+			username = data.username;
+			$("#username").html(username);
+		});
+		
+		
+		
+		//listeners
+		socketio.on("user_logged_in", function(data) {
+			addUser(data.username);
+		});
+		socketio.on("log_message", function(data) {
+			logit(data.message);
+		});
+		socketio.on("user_logged_out", function(data) {
+			$("#user_div_"+data.username).fadeOut(300, function(){
+				$(this).remove();
+			});
+		});
+		function addUser(user){
+			$("#userBox").append('<div id="user_div_'+user+'">'+user+'</div>').fadeIn(300);
+		}
+		function logit(message){
+			$("#log").prepend(message);
+		}
+		socketio.on("changed_rooms", function(data) {
+			$("#rooms a").removeClass("selected");
+			$("#rooms a[data-room="+data.room+"]").addClass("selected");
+			$("#userBox").empty();
+			$("#log").empty();
+			
+			for(x in data.logs){
+				logit(data.logs[x]);
+			}
+			for(x in data.users){
+				addUser(data.users[x]);
+			}
+		});
+		$(document).ready(function(){
+			$("#chatting").submit(function(e){
+				socketio.emit("post_comment", { message: $("#msg").val() });
+				$("#msg").val("");
+				e.preventDefault();
+			});
+			$("#rooms a[class!=active]").click(function(e){
+				e.preventDefault();
+				var $room = $(this).attr('data-room');
+				socketio.emit("change_rooms", { room: $room });
+			});
+		});
+	</script>
+    <style>
+    	#rooms { float: right; width: 300px; text-align: right; }
+    	#rooms a.selected { color: #a00; }
+	    #userBox { width: 500px; background: #eee; width: 300px; height: 500px; overflow: scroll; float: right; margin-left: 20px; }
+	    #log > div.info { color: #999; }
+	    #log > div.message { color: #0a0; }
+	    #log > div.fail { color: #a00; }
+	    #log > div.okay { color: #00a; }
+	    #username { color: blue; }
+    </style>
+</head>
+<body>
+	<div id="rooms">
+		<a href="#" data-room="r1">Room 1</a>
+		<a href="#" data-room="r2">Room 2</a>
+		<a href="#" data-room="r3">Room 3</a>
+	</div>
+	<br clear="all" />
+	<div id="userBox"></div>
+	<form id="chatting">
+		<span id="username"></span>: <input type="text" id="msg"/> <input type="submit" value="send" /><br />
+	</form>
+	<hr />
+	<div id="log"></div>
+</body>
+</html>

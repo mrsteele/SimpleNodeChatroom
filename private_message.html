@@ -1,0 +1,73 @@
+<html>
+<head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+	<script src="http://omnionline.us:1337/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+		var username;
+		var temp_username = prompt("Your name: ", "your name here");
+		var socketio = io.connect("omnionline.us:1337");
+		
+		// login
+		socketio.emit("log_in", { username: temp_username });
+		socketio.on("return_username", function(data) {
+			username = data.username;
+			$("#username").html(username);
+			for(var i in data.clients) {
+				if($("#userBox > #user_div_"+data.clients[i]).length == 0){
+					addUser(data.clients[i]);
+				}
+			}
+		});
+		
+		
+		
+		//listeners
+		socketio.on("user_logged_in", function(data) {
+			$("#log").prepend('<div class="info"><strong>'+data.username+'</strong> logged in.</div>');
+			addUser(data.username);
+		});
+		socketio.on("recieve_pm", function(data) {
+			logit('<div class="message"><strong>'+data.sender+'</strong>: '+data.message+'</div>');
+		});
+		socketio.on("return_pm", function(data) {
+			logit('<div class="okay">(Message to <strong>'+data.username+'</strong>): '+data.message+'</div>');
+		});
+		socketio.on("fail_pm", function(data) {
+			logit('<div class="fail">Your message to <strong>'+data.username+'</strong> failed. User doesn\'t exist.</div>');
+		});
+		socketio.on("user_logged_out", function(data) {
+			$("#user_div_"+data.username).fadeOut(300, function(){
+				$(this).remove();
+			});
+			$("#log").prepend('<div class="info"><strong>'+data.username+'</strong> logged out.</div>');
+		});
+		function sendMessage() {
+			socketio.emit("send_pm", { username: $("#to").val(), message: $("#msg").val() });
+			$("#msg").val("");
+		}
+		function addUser(user){
+			$("#userBox").append('<div id="user_div_'+user+'">'+user+'</div>').fadeIn(300);
+		}
+		function logit(message){
+			$("#log").prepend(message);
+		}
+	</script>
+    <style>
+	    #userbox { width: 500px; background: #eee; width: 300px; height: 500px; overflow: scroll; float: right; margin-left: 20px; }
+	    #log > div.info { color: #999; }
+	    #log > div.message { color: #0a0; }
+	    #log > div.fail { color: #a00; }
+	    #log > div.okay { color: #00a; }
+	    #username { color: blue; }
+    </style>
+</head>
+<body>
+	<div id="userBox"></div>
+	<div id="username"></div>
+	To: <input type="text" id="to"/><br />
+	Message:<br />
+	<textarea id="msg"></textarea><br />
+	<button onclick="sendMessage()">send</button><br /><hr />
+	<div id="log"></div>
+</body>
+</html>

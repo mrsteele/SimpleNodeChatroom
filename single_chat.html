@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="http://omnionline.us:1337/socket.io/socket.io.js"></script>
+		<script type="text/javascript">
+			var username = prompt("Your name: ", "your name here");
+			var socketio = io.connect("omnionline.us:1337");
+			
+			//listeners
+			socketio.on("message_to_client", function(data) {
+				document.getElementById("chatlog").innerHTML = ("<hr/><font color=blue>" +data['name'] + ": </font>" + data['message'] + document.getElementById("chatlog").innerHTML);
+			});
+			socketio.on("user_logged_in", function(data) {
+				document.getElementById("chatlog").innerHTML = ("<hr/><font color=grey>" +data['name'] + " has joined the chat</font>" + document.getElementById("chatlog").innerHTML);
+			});
+			socketio.on("user_logged_out", function(data) {
+				document.getElementById("chatlog").innerHTML = ("<hr/><font color=grey>" +data['name'] + " has logged out </font>" + document.getElementById("chatlog").innerHTML);
+			});
+			
+			socketio.emit("server_user_logged_in", { name: username });
+			window.onunload = function(e){
+				socketio.emit("server_user_logged_out", { name: username });
+			}
+
+			function sendMessage() {
+				var msg = document.getElementById("message_input").value;
+				socketio.emit("message_to_server", { name: username, message : msg});
+			}
+		</script>
+	</head>
+	<body>
+		<font color="blue"><script tyle="text/javascript">document.write(escape(username));</script></font>
+		<input type="text" id="message_input"/>
+		<button onclick="sendMessage()">send</button>
+		<div id="chatlog"></div>
+	</body>
+</html>
