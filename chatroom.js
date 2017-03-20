@@ -4,12 +4,13 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io').listen(http);
 var sanitize = require('validator').sanitize;
-	
+var port = 1337;
+
 app.get('/', function(req, res){
 	res.sendfile('chatroom.html');
 });
-http.listen(1337, function(){
-	console.log("listening");
+http.listen(port, function(){
+	console.log("listening at http://localhost:" + port);
 });
 
 var clients = {};
@@ -92,7 +93,7 @@ io.sockets.on('connection', function(socket) {
 		vars['username'] = s(vars.username);
 		all_socks[socket.id] = vars.username;
 		socket.emit('return_username', { username: vars.username });
-		
+
 		if(clients.hasOwnProperty(vars.username)){
 			clients[vars.username].socks[socket.id] = socket; // user already exists
 		}else{
@@ -108,7 +109,7 @@ io.sockets.on('connection', function(socket) {
 		leaveRoom(socket);
 		joinRoom(socket, data.room);
 	});
-	
+
 	socket.on('disconnect', function () {
 		if(clients[all_socks[socket.id]]){
 			delete clients[all_socks[socket.id]].socks[socket.id];
